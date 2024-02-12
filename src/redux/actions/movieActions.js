@@ -1,3 +1,4 @@
+// Action types
 export const FETCH_MOVIES = 'FETCH_MOVIES';
 export const SET_MOVIES = 'SET_MOVIES';
 export const FETCH_MOVIE_DETAILS = 'FETCH_MOVIE_DETAILS'; 
@@ -15,14 +16,15 @@ export const fetchMovies = () => ({
 // Action creator for fetching details of a specific movie
 export const fetchMovieDetails = (movieId) => ({
     type: FETCH_MOVIE_DETAILS,
-    payload: movieId,
+    payload: Number(movieId),
 });
 
 // Action creator for setting the details of a specific movie in the store
 export const setMovieDetails = (details) => ({
     type: SET_MOVIE_DETAILS,
-    payload: details, // The detailed information of the movie
+    payload: details,
 });
+
 
 // Action creator for initiating the process of adding a new movie
 export const addMovie = (movieData) => ({

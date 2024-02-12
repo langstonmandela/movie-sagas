@@ -1,4 +1,4 @@
-import { createStore, combineReducers, applyMiddleware } from 'redux';
+import { createStore, combineReducers, applyMiddleware, compose } from 'redux';
 import logger from 'redux-logger';
 import createSagaMiddleware from 'redux-saga';
 import { takeEvery, put } from 'redux-saga/effects';
@@ -18,20 +18,23 @@ function* fetchAllMovies() {
 
 function* rootSaga() {
   yield takeEvery('FETCH_MOVIES', fetchAllMovies);
-  
 }
 
 const sagaMiddleware = createSagaMiddleware();
-
 
 const rootReducer = combineReducers({
   movies: moviesReducer, 
 });
 
+// Use compose to combine middleware and DevTools extension
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 
 const store = createStore(
   rootReducer,
-  applyMiddleware(sagaMiddleware, logger) 
+  composeEnhancers(
+    applyMiddleware(sagaMiddleware, logger)
+    
+  )
 );
 
 // Run the root saga
