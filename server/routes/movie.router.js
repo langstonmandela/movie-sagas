@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../modules/pool')
+const pool = require('../modules/pool');
 
+// Endpoint to get all movies with their genres
 router.get('/', (req, res) => {
   const query = `
-    SELECT m.*, array_agg(g.name) as genres
+    SELECT m.*, array_agg(g.name) AS genres
     FROM movies m
     LEFT JOIN movies_genres mg ON m.id = mg.movie_id
     LEFT JOIN genres g ON mg.genre_id = g.id
@@ -12,62 +13,68 @@ router.get('/', (req, res) => {
     ORDER BY m.title ASC;
   `;
   pool.query(query)
-    .then(result => {
+    .then((result) => {
       res.send(result.rows);
     })
-    .catch(err => {
-      console.log('ERROR: Get all movies', err);
-      res.sendStatus(500)
-    })
+    .catch((err) => {
+      console.error('ERROR: Get all movies', err);
+      res.sendStatus(500);
+    });
 });
 
+// Endpoint to add a new movie
 router.post('/', (req, res) => {
-  console.log(req.body);
-  // RETURNING "id" will give us back the id of the created movie
+  const { title, poster, description, genre_id } = req.body;
   const insertMovieQuery = `
-    INSERT INTO "movies" 
-      ("title", "poster", "description")
-      VALUES
-      ($1, $2, $3)
-      RETURNING "id";
+    INSERT INTO "movies" ("title", "poster", "description")
+    VALUES ($1, $2, $3)
+    RETURNING "id";
   `;
-  const insertMovieValues = [
-    req.body.title,
-    req.body.poster,
-    req.body.description
-  ]
-  // FIRST QUERY MAKES MOVIE
-  pool.query(insertMovieQuery, insertMovieValues)
-    .then(result => {
-      // ID IS HERE!
-      console.log('New Movie Id:', result.rows[0].id);
-      const createdMovieId = result.rows[0].id
-
-      // Now handle the genre reference:
+  pool.query(insertMovieQuery, [title, poster, description])
+    .then((result) => {
+      const createdMovieId = result.rows[0].id;
       const insertMovieGenreQuery = `
-        INSERT INTO "movies_genres" 
-          ("movie_id", "genre_id")
-          VALUES
-          ($1, $2);
+        INSERT INTO "movies_genres" ("movie_id", "genre_id")
+        VALUES ($1, $2);
       `;
-      const insertMovieGenreValues = [
-        createdMovieId,
-        req.body.genre_id
-      ]
-      // SECOND QUERY ADDS GENRE FOR THAT NEW MOVIE
-      pool.query(insertMovieGenreQuery, insertMovieGenreValues)
-        .then(result => {
-          //Now that both are done, send back success!
+      pool.query(insertMovieGenreQuery, [createdMovieId, genre_id])
+        .then(() => {
           res.sendStatus(201);
-        }).catch(err => {
-          // catch for second query
-          console.log(err);
-          res.sendStatus(500)
-      })
-    }).catch(err => { // 👈 Catch for first query
-      console.log(err);
-      res.sendStatus(500)
+        })
+        .catch((err) => {
+          console.error(err);
+          res.sendStatus(500);
+        });
     })
-})
+    .catch((err) => {
+      console.error(err);
+      res.sendStatus(500);
+    });
+});
+
+// Endpoint to get details of a specific movie by ID
+router.get('/:id', (req, res) => {
+  const movieId = req.params.id;
+  const query = `
+    SELECT m.*, array_agg(g.name) AS genres
+    FROM movies m
+    LEFT JOIN movies_genres mg ON m.id = mg.movie_id
+    LEFT JOIN genres g ON mg.genre_id = g.id
+    WHERE m.id = $1
+    GROUP BY m.id;
+  `;
+  pool.query(query, [movieId])
+    .then((result) => {
+      if (result.rows.length) {
+        res.send(result.rows[0]);
+      } else {
+        res.status(404).send({ message: 'Movie not found' });
+      }
+    })
+    .catch((err) => {
+      console.error('ERROR: Get movie details', err);
+      res.sendStatus(500);
+    });
+});
 
 module.exports = router;

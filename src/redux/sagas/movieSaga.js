@@ -1,44 +1,57 @@
 import { takeLatest, call, put } from 'redux-saga/effects';
 import axios from 'axios';
+import {
+    FETCH_MOVIES,
+    ADD_MOVIE,
+    FETCH_MOVIE_DETAILS,
+    SET_MOVIES,
+    SET_LOADING_STATE,
+    SET_MOVIE_DETAILS, 
+    ADD_MOVIE_FAILURE,
+} from '../actions/movieActions';
 
-// Worker saga will be fired on FETCH_MOVIES actions
+// Fetch all movies
 function* fetchMoviesSaga() {
     try {
         const response = yield call(axios.get, '/api/movies');
-        yield put({ type: 'SET_MOVIES', payload: response.data });
+        // Dispatching SET_MOVIES action with the fetched movies data
+        yield put({ type: SET_MOVIES, payload: response.data });
     } catch (error) {
-        console.log('Fetch movies request failed', error);
+        console.error('Fetch movies request failed:', error);
     }
 }
 
-// Worker saga for adding a new movie
-function* addMovieSaga(action) {
-    try {
-        const response = yield call(axios.post, '/api/movies', action.payload); 
-        yield put({ type: 'FETCH_MOVIES' });
-    } catch (error) {
-        console.log('Add movie request failed', error);
-    }
-}
-
-// Worker saga for fetching movie details
+// Fetch movie details
 function* fetchMovieDetailsSaga(action) {
     try {
-        yield put({ type: 'SET_LOADING_STATE', payload: true }); // Indicate loading started
+        yield put({ type: SET_LOADING_STATE, payload: true });
         const response = yield call(axios.get, `/api/movies/${action.payload}`);
-        yield put({ type: 'SET_MOVIE_DETAILS', payload: response.data });
-        yield put({ type: 'SET_LOADING_STATE', payload: false }); // Indicate loading finished
+        console.log(response.data);
+        // Dispatching SET_MOVIE_DETAILS action with the fetched movie details data
+        yield put({ type: SET_MOVIE_DETAILS, payload: response.data });
+        yield put({ type: SET_LOADING_STATE, payload: false });
     } catch (error) {
-        console.log('Fetch movie details request failed', error);
-        yield put({ type: 'SET_LOADING_STATE', payload: false }); // Reset loading state on failure
+        console.error('Fetch movie details request failed:', error);
+        yield put({ type: ADD_MOVIE_FAILURE, payload: error.toString() });
+        yield put({ type: SET_LOADING_STATE, payload: false });
     }
 }
 
-// Watcher sagas
-function* watchMoviesSaga() {
-    yield takeLatest('FETCH_MOVIES', fetchMoviesSaga);
-    yield takeLatest('ADD_MOVIE', addMovieSaga);
-    yield takeLatest('FETCH_MOVIE_DETAILS', fetchMovieDetailsSaga); // Watch for FETCH_MOVIE_DETAILS action
+// Add a new movie
+function* addMovieSaga(action) {
+    try {
+        yield call(axios.post, '/api/movies', action.payload);
+        // Refetching movies list to include the new movie
+        yield put({ type: FETCH_MOVIES });
+    } catch (error) {
+        console.error('Add movie request failed:', error);
+        yield put({ type: ADD_MOVIE_FAILURE, payload: error.message });
+    }
 }
 
-export default watchMoviesSaga;
+// Combine watcher sagas
+export default function* watchMoviesSaga() {
+    yield takeLatest(FETCH_MOVIES, fetchMoviesSaga);
+    yield takeLatest(ADD_MOVIE, addMovieSaga);
+    yield takeLatest(FETCH_MOVIE_DETAILS, fetchMovieDetailsSaga);
+}

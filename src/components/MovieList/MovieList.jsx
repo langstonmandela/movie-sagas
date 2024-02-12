@@ -1,14 +1,12 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchMovies } from '../../actions/movieActions';
-import { SimpleGrid, Box, Image, Heading, useColorModeValue } from '@chakra-ui/react';
-import { Link } from 'react-router-dom'; 
-import { Spinner } from '@chakra-ui/react';
-
+import { fetchMovies } from '../../redux/actions/movieActions';
+import { SimpleGrid, Box, Image, Heading, useColorModeValue, Center, Spinner } from '@chakra-ui/react';
+import { Link } from 'react-router-dom';
 
 const MoviesList = () => {
   const dispatch = useDispatch();
-  const movies = useSelector(state => state.movies.list);
+  const { list: movies, isLoading } = useSelector(state => state.movies);
 
   useEffect(() => {
     dispatch(fetchMovies());
@@ -16,6 +14,14 @@ const MoviesList = () => {
 
   const bg = useColorModeValue('gray.50', 'gray.800');
   const color = useColorModeValue('black', 'white');
+
+  if (isLoading) {
+    return (
+      <Center height="100vh">
+        <Spinner size="xl" />
+      </Center>
+    );
+  }
 
   return (
     <SimpleGrid columns={[2, null, 4]} spacing="40px" p="10">
@@ -28,9 +34,10 @@ const MoviesList = () => {
             bg={bg}
             color={color}
             _hover={{ boxShadow: "xl" }}
-            cursor="pointer" 
+            cursor="pointer"
+            data-testid="movieItem"
           >
-            <Image src={movie.poster} alt={movie.title} borderRadius="md"/>
+            <Image src={movie.poster} alt={movie.title} borderRadius="md" data-testid="toDetails" />
             <Heading size="md" mt="2">{movie.title}</Heading>
           </Box>
         </Link>
@@ -40,4 +47,3 @@ const MoviesList = () => {
 };
 
 export default MoviesList;
-

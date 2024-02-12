@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, FormControl, FormLabel, Input, Textarea, Button, useToast } from '@chakra-ui/react';
 import { useHistory } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { addMovie } from '../actions/movieActions'; 
+import { addMovie } from '../../redux/actions/movieActions'; 
 
 const AddMovie = () => {
     const [title, setTitle] = useState('');
@@ -41,7 +41,10 @@ const AddMovie = () => {
                     <FormLabel>Description</FormLabel>
                     <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Movie Description" />
                 </FormControl>
-                <Button mt={4} colorScheme="teal" type="submit">Add Movie</Button>
+                <Button mt={4} colorScheme="teal" type="submit" disabled={!title || !poster || !description}>
+                    Add Movie
+                </Button>
+
                 <Button mt={4} ml={2} colorScheme="red" onClick={() => history.push('/')}>Cancel</Button>
             </form>
         </Box>
